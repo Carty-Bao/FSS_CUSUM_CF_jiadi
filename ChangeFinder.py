@@ -4,6 +4,7 @@ from matplotlib import pyplot as plt
 import statsmodels.api as sm
 from dataset import datasets as datasets
 from AR_model import SDAR
+import time
 
 
 class ChangeFinderAbstract(object):
@@ -233,14 +234,15 @@ class CUsum(object):
             self.add_one(self.ts_temp, x)
 
             ave = self.average[len(self.ts)-2]
-
+            s = time.time()
             for mask in self.average[(len(self.ts)-1):]:
                 if mask != ave:
                     ave_next = mask
                     break
                 else:
                     ave_next = self.mean[-1] * 1000
-
+            # print(time.time()-s)
+            # print("!!!!!!!!!!!!!!!!!!!!")
             threshold = self.calculate_threshold(ave, ave_next)
             LLR = self.calculate_log_likelihood_ratio(ave, x)
             self.s_kt.append(LLR)
@@ -261,7 +263,7 @@ class CUsum(object):
 
             ave = np.mean(self.ts_temp)
 
-            threshold = self.calculate_threshold(ave, ave+30)
+            threshold = self.calculate_threshold(ave, ave+7)
             LLR = self.calculate_log_likelihood_ratio(ave, x)
             self.s_kt.append(LLR)
 
@@ -373,11 +375,12 @@ class FSS(object):
 
         print(self.flag)
         indicater = []
-        for flag in self.flag:
+        for changepoint, flag in enumerate(self.flag):
             if flag == 0:
                 indicater.extend([0,0,0,0,0,0,0,0,0,0])
             else:
                 indicater.extend([0,0,0,0,0,0,0,0,0,1])
+                print((changepoint+1) * self.fixed_size)
         return indicater
                       
 if __name__ == '__main__':

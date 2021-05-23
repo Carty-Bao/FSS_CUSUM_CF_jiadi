@@ -90,7 +90,7 @@ class SDAR(object):
 
         #返回概率密度函数
         
-        return -math.log(math.exp(-0.5*(x-weighted_seq)**2/self.sigma)/((2 * math.pi)**0.5*self.sigma**0.5)), weighted_seq
+        return (-math.log(math.exp(-0.5*(x-weighted_seq)**2/self.sigma)/((2 * math.pi)**0.5*self.sigma**0.5)))*(weighted_seq**self.order), weighted_seq
 
 def raw_signal(n, f1, f2, sigma):
     '''
