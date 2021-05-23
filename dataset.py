@@ -174,6 +174,91 @@ class datasets(object):
         bkps = list(np.cumsum(bkps))
         return signal, bkps, mean, var
 
+    def PRI_norm_Jitter(self):
+        '''
+        生成均匀抖动PRI脉冲
+        '''
+        def PRI_session(session):
+            '''
+            在一个session中生成对应的均匀抖动pri脉冲
+            '''
+            signal_para = []
+
+            for elem in session.split(' '):
+                signal_para.append(int(elem))
+            
+            order = signal_para[0]
+            lower_bound = signal_para[1]
+            upper_bound = signal_para[2]
+            num = signal_para[3]
+
+            signal_session = np.random.uniform(low=lower_bound, high=upper_bound, size=num)
+            
+            return signal_session, signal_para
+
+        signal = []
+        cf = configparser.ConfigParser()
+        cf.read("PRI_signal.ini", encoding='UTF-8')
+        plt.rcParams['axes.unicode_minus'] = False
+
+        bkp_points = int(cf.get("signal", "bkp_points"))
+        norm_signal = str(cf.get("signal", "norm_signal"))
+        if len(norm_signal.split('\n')) != bkp_points + 1: 
+            print("session number is not match, please try to modify PRI_signal.ini \n")
+
+        bkps = []
+        lower_bound = []
+        upper_bound = []
+        for session in norm_signal.split('\n'):
+            signal_session, signal_para = PRI_session(session)
+            lower_bound.append(signal_para[1])
+            upper_bound.append(signal_para[2])
+            bkps.append(signal_para[3])
+            signal.extend(signal_session)
+        bkps = list(np.cumsum(bkps))
+        return signal, bkps, lower_bound, upper_bound
+
+    def PRI_rayleigh_Jitter(self):
+        '''
+        生成锐利抖动PRI脉冲
+        '''
+        def PRI_session(session):
+            '''
+            在一个session中生成对应的锐利抖动pri脉冲
+            '''
+            signal_para = []
+
+            for elem in session.split(' '):
+                signal_para.append(int(elem))
+            
+            order = signal_para[0]
+            scale = signal_para[1]
+            num = signal_para[2]
+
+            signal_session = np.random.rayleigh(scale, num)
+            
+            return signal_session, signal_para 
+
+        signal = []
+        cf = configparser.ConfigParser()
+        cf.read("PRI_signal.ini", encoding='UTF-8')
+        plt.rcParams['axes.unicode_minus'] = False
+
+        bkp_points = int(cf.get("signal", "bkp_points"))
+        norm_signal = str(cf.get("signal", "rayleigh_signal"))
+        if len(norm_signal.split('\n')) != bkp_points + 1: 
+            print("session number is not match, please try to modify PRI_signal.ini \n")
+
+        bkps = []
+        scale = []
+        for session in norm_signal.split('\n'):
+            signal_session, signal_para = PRI_session(session)
+            scale.append(signal_para[1])
+            bkps.append(signal_para[2])
+            signal.extend(signal_session)
+        bkps = list(np.cumsum(bkps))
+        return signal, bkps, scale
+        
     def PRI2TOA(self, PRI_signal):
         #若第一个数据为0，其他数据减去第一个
         PRI_signal_init = []
@@ -292,18 +377,25 @@ if __name__ == '__main__':
 
 
     #生成高斯抖动PRI脉冲 
-    dataset = datasets()
-    signal, bkps, mean, var = dataset.PRI_Gauss_Jitter()
+    # dataset = datasets()
+    # signal, bkps, mean, var = dataset.PRI_Gauss_Jitter()
 
+    #生成均匀抖动PRI脉冲
+    # dataset = datasets()
+    # signal, bkps, lower_bound, upper_bound = dataset.PRI_norm_Jitter()
+
+    #生成瑞利分布PRI脉冲
+    dataset = datasets()
+    signal, bkps, scale = dataset.PRI_rayleigh_Jitter()
     # #在高斯抖动PRI脉冲中加入虚假脉冲
-    PRI_spur = dataset.add_spur_PRI(signal, para=0.001, mode='pulse_ratio')    #添加虚假脉冲
+    # PRI_spur = dataset.add_spur_PRI(signal, para=0.001, mode='pulse_ratio')    #添加虚假脉冲
 
     #在高斯抖动PRI脉冲中删除一些脉冲
     # PRI_miss = dataset.miss_PRI(signal, miss_ratio=0.05)
 
     #绘图
-    plt.scatter(range(len(PRI_spur)), PRI_spur, marker='+', color='b')
-    plt.ylim(20, 125)
+    plt.scatter(range(len(signal)), signal, marker='+', color='b')
+    # plt.ylim(20, 125)
     plt.xlabel("time/s")
     plt.ylabel("amplitude")
     plt.show()
