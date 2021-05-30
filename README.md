@@ -7,11 +7,15 @@ jumping_mean_random:描述同上，数据跳跃方向随机，尺度随机，服
 jumping_variance：可以生成方差跳跃数据集合，数据服从高斯分布，可以自定义均值，切换点自动生成，服从dirichlet分布。
 jumping_variance_random:描述同上，方差增减随机，数据服从二项分布。
 jumping_variance_mean:可以生成均值方差同时跳跃的数据集合，数据服从高斯分布，切换点自动生成，服从dirichlet分布。
-PRI_Gauss_Jitter：生成多功能雷达抖动PRI数据，数据具体信息在配置文件PRI_signal.ini中配置。通过修改sim_signal变量和bkp_points变量来修改数据段的结构。
+PRI_Gauss_Jitter：生成多功能雷达高斯抖动PRI数据，数据具体信息在配置文件PRI_signal.ini中配置。通过修改sim_signal变量和bkp_points变量来修改数据段的结构。
+PRI_norm_Jitter：生成多功能雷达均匀抖动PRI数据，数据具体信息在配置文件PRI_signal.ini中配置。通过修改norm_signal变量和bkp_points变量来修改数据段的结构。
+PRI_rayleigh_Jitter：生成多功能雷达瑞利抖动PRI数据，数据具体信息在配置文件PRI_signal.ini中配置。通过修改rayleigh_signal变量和bkp_points变量来修改数据段的结构。
+PRI_stagger：生成多功能雷达参差抖动PRI数据，数据具体信息在配置文件PRI_signal.ini中配置。通过修改stagger_signal_disorder，stagger_signal_isorder变量和bkp_points变量来修改数据段的结构。其中参数isorder=True表示PRI参差抖动PRI脉冲有序，isorder=False表示无序。
 add_spur_PRI：给时间序列添加虚假脉冲，可以通过脉冲密度或者脉冲比例来添加虚假脉冲。
 miss_PRI：在脉冲中随机剔除脉冲，构造缺失脉冲。
 del_outlier：检测PRI雷达脉冲中的缺失脉冲和虚假脉冲，并删除脉冲。
 ### 2）how to use：
+在PRI_signal.ini中修改PRI脉冲信号的参数
 在dataset.py中修改以下部分。
 ```
 if __name__ == '__main__':
@@ -245,3 +249,9 @@ display.display_signal_score(PRI_spur, ret, mode='PRI')
 ```
 python main.py
 ```
+
+## Reference
+1.非合作观测下的MFR雷达状态自动定义，北京理工大学雷达与对抗技术研究所
+2.Nikiforov I V . Two strategies in the problem of change detection and isolation[J]. IEEE Transactions on Information Theory, 1997, 43(2):770-776.
+3.Takeuchi J, Yamanishi K. A unifying framework for detecting outliers and change points from time series[J]. IEEE transactions on Knowledge and Data Engineering, 2006, 18(4):482-492.
+4.Pauli Virtanen, Ralf Gommers, Travis E. Oliphant, Matt Haberland, Tyler Reddy, David Cournapeau, Evgeni Burovski, Pearu Peterson, Warren Weckesser, Jonathan Bright, Stéfan J. van der Walt, Matthew Brett, Joshua Wilson, K. Jarrod Millman, Nikolay Mayorov, Andrew R. J. Nelson, Eric Jones, Robert Kern, Eric Larson, CJ Carey, İlhan Polat, Yu Feng, Eric W. Moore, Jake VanderPlas, Denis Laxalde, Josef Perktold, Robert Cimrman, Ian Henriksen, E.A. Quintero, Charles R Harris, Anne M. Archibald, Antônio H. Ribeiro, Fabian Pedregosa, Paul van Mulbregt, and SciPy 1.0 Contributors. (2020) SciPy 1.0: Fundamental Algorithms for Scientific Computing in Python. Nature Methods, 17(3), 261-272.

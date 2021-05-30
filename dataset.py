@@ -7,6 +7,8 @@ import statsmodels.api as sm
 import pandas as pd
 import configparser
 import scipy.stats as stats
+from hmmlearn import hmm
+
 
 class datasets(object):
 
@@ -218,6 +220,89 @@ class datasets(object):
         bkps = list(np.cumsum(bkps))
         return signal, bkps, lower_bound, upper_bound
 
+    def PRI_stagger(self, isorder=False):
+        def PRI_session(session):
+            '''
+            在一个session中生成对应的均匀抖动pri脉冲
+            '''
+            signal_para = []
+            signal_session = []
+
+            for elem in session.split(' '):
+                signal_para.append(int(elem))
+            
+            order = signal_para[0]
+            val = signal_para[1]
+            num = signal_para[2]
+
+            if not isorder:
+                n = int(np.random.uniform(low=2, high=64))
+                sBase = np.random.uniform(low=100, high=300, size=n)
+                sBase = [i+val for i in sBase]
+                T = math.ceil(num / n)
+                for index in range(T):
+                    signal_session.extend(sBase)
+                signal_session = signal_session[:num]
+
+                return signal_session, signal_para
+            if isorder:
+                model = hmm.GaussianHMM(n_components=3, covariance_type="diag")
+
+                model.startprob_ = np.array([0.6, 0.3, 0.1])
+                model.transmat_ = np.array([[0.7, 0.2, 0.1],
+                                            [0.3, 0.5, 0.2],
+                                            [0.3, 0.3, 0.4]])
+
+                model.means_ = np.array([[val-5], [val], [val+5]])
+                model.covars_ = np.tile(np.identity(1), (3,1))
+                
+                X, Z = model.sample(num)
+                signal_session = X
+
+                return signal_session, signal_para
+
+        if not isorder:
+            signal = []
+            cf = configparser.ConfigParser()
+            cf.read("PRI_signal.ini", encoding='UTF-8')
+            plt.rcParams['axes.unicode_minus'] = False
+
+            bkp_points = int(cf.get("signal", "bkp_points"))
+            norm_signal = str(cf.get("signal", "stagger_signal_disorder"))
+            if len(norm_signal.split('\n')) != bkp_points + 1: 
+                print("session number is not match, please try to modify PRI_signal.ini \n")
+
+            bkps = []
+            val = []
+            for session in norm_signal.split('\n'):
+                signal_session, signal_para = PRI_session(session)
+                val.append(signal_para[1])
+                bkps.append(signal_para[2])
+                signal.extend(signal_session)
+            bkps = list(np.cumsum(bkps))
+            return signal, bkps, val
+    
+        if isorder:
+            signal = []
+            cf = configparser.ConfigParser()
+            cf.read("PRI_signal.ini", encoding='UTF-8')
+            plt.rcParams['axes.unicode_minus'] = False
+
+            bkp_points = int(cf.get("signal", "bkp_points"))
+            norm_signal = str(cf.get("signal", "stagger_signal_isorder"))
+            if len(norm_signal.split('\n')) != bkp_points + 1: 
+                print("session number is not match, please try to modify PRI_signal.ini \n")
+
+            bkps = []
+            val = []
+            for session in norm_signal.split('\n'):
+                signal_session, signal_para = PRI_session(session)
+                val.append(signal_para[1])
+                bkps.append(signal_para[2])
+                signal.extend(signal_session)
+            bkps = list(np.cumsum(bkps))
+            return signal, bkps, val
+
     def PRI_rayleigh_Jitter(self):
         '''
         生成锐利抖动PRI脉冲
@@ -362,9 +447,9 @@ def data_evaluate(signal):
 
     arma_mod01 = sm.tsa.ARMA(diff1, (0, 1)).fit()
     print("ARMA_mod01: ", arma_mod01.aic, arma_mod01.bic, arma_mod01.hqic)
-    arma_mod20 = sm.tsa.ARMA(diff1, (2, 0)).fit()
+    arma_mod20 = sm.tsa.ARMA(diff1, (3, 0)).fit()
     print("ARMA_mod20: ", arma_mod20.aic, arma_mod20.bic, arma_mod20.hqic)
-    arma_mod21 = sm.tsa.ARMA(diff1, (2, 1)).fit()
+    arma_mod21 = sm.tsa.ARMA(diff1, (3, 1)).fit()
     print("ARMA_mod21: ", arma_mod21.aic, arma_mod21.bic, arma_mod21.hqic)
 
 
@@ -385,13 +470,20 @@ if __name__ == '__main__':
     # signal, bkps, lower_bound, upper_bound = dataset.PRI_norm_Jitter()
 
     #生成瑞利分布PRI脉冲
+    # dataset = datasets()
+    # signal, bkps, scale = dataset.PRI_rayleigh_Jitter()
+
+    #生成参差PRI脉冲
     dataset = datasets()
-    signal, bkps, scale = dataset.PRI_rayleigh_Jitter()
+    signal, bkps, val = dataset.PRI_stagger(True)
     # #在高斯抖动PRI脉冲中加入虚假脉冲
     # PRI_spur = dataset.add_spur_PRI(signal, para=0.001, mode='pulse_ratio')    #添加虚假脉冲
 
     #在高斯抖动PRI脉冲中删除一些脉冲
     # PRI_miss = dataset.miss_PRI(signal, miss_ratio=0.05)
+
+    #找出ARMA模型的参数
+    data_evaluate(signal)
 
     #绘图
     plt.scatter(range(len(signal)), signal, marker='+', color='b')
